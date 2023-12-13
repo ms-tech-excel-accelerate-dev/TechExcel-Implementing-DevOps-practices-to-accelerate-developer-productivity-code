@@ -93,7 +93,7 @@ jobs:
 
       - uses: azure/webapps-deploy@v2
         with:
-          app-name: '$webAppDevUriPrefix-dev'
+          app-name: $webAppDevUriPrefix
           images: $registryName/$repositoryName:$tag
 
   # deploy-to-test:
