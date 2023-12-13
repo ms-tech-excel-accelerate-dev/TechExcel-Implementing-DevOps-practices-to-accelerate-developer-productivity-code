@@ -1,4 +1,15 @@
-on: [workflow_dispatch]
+on:
+    workflow_dispatch:
+     inputs:
+      appenv:
+        type: choice
+        description: Choose the target environment
+        options: 
+          - dev
+          - test
+          - prod
+        default: dev
+
 name: Azure ARM
 jobs:
   deploy:
@@ -20,7 +31,7 @@ jobs:
         subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION }}
         resourceGroupName: ${{ secrets.AZURE_RG }}
         template: ./InfrastructureAsCode/main.bicep
-        #parameters: storageAccountType=Standard_LRS
+        parameters: environment=${{ github.event.inputs.appenv }}
 
     # output containerName variable from template
     - run: echo ${{ steps.deploy.outputs.containerName }}
