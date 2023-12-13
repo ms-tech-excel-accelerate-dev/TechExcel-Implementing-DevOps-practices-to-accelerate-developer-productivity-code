@@ -9,6 +9,8 @@ env:
   dockerFolderPath: ./Application/src/RazorPagesTestSample
   tag: ${{github.run_number}}
   webAppDevUriPrefix: zidi4zoe54vbm-dev
+  LOAD_TEST_RESOURCE: "AlesspanLoadTesting"   # set this to your Azure Load Test resource's name
+  LOAD_TEST_RESOURCE_GROUP: "mpp-team-messaging-rg" # set this to the resource group you've used for this training
 
 on:
   push:
@@ -93,8 +95,48 @@ jobs:
 
       - uses: azure/webapps-deploy@v2
         with:
-          app-name: $webAppDevUriPrefix
-          images: $registryName/$repositoryName:$tag
+          app-name: ${{ env.webAppDevUriPrefix }}
+          images: ${{ env.registryName }}/${{ env.repositoryName}}:${{ env.tag }}
+
+  loadTest:
+    name: Load Test
+    runs-on: ubuntu-latest
+    needs: deploy-to-dev
+    steps:
+      - name: Checkout GitHub Actions 
+        uses: actions/checkout@v2
+          
+      - name: Login to Azure
+        uses: azure/login@v1
+        continue-on-error: false
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+      - name: 'Azure Load Testing'
+        uses: azure/load-testing@v1
+        with:
+          loadTestConfigFile: 'LoadTestConfig.yaml'
+          loadTestResource: ${{ env.LOAD_TEST_RESOURCE }}
+          resourceGroup: ${{ env.LOAD_TEST_RESOURCE_GROUP }}
+          env: |
+            [
+              {
+              "name": "webapp",
+              "value": "${{ env.webAppDevUriPrefix }}.azurewebsites.net"
+              }
+            ]  
+
+      - uses: JasonEtco/create-an-issue@v2.9.1
+        if: ${{ failure() }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/load_test_report.md
+          
+      - uses: actions/upload-artifact@v2
+        with:
+          name: loadTestResults
+          path: ${{ github.workspace }}/loadTest
 
   # deploy-to-test:
   
