@@ -6,10 +6,10 @@ name: MPP-Team-Messaging-App CI/CD
 on:
   push:
     branches: [ "main" ]
-    paths: ["Application/*"]
+    paths: Application/*
   pull_request:
     branches: [ "main" ]
-    paths: ["Application/*"]
+    paths: Application/*
   workflow_dispatch:
     
 
