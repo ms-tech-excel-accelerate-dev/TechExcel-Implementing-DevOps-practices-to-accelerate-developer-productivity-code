@@ -132,7 +132,7 @@ jobs:
         with:
           filename: .github/ISSUE_TEMPLATE/load_test_report.md
           
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           name: loadTestResults
           path: ${{ github.workspace }}/loadTest
