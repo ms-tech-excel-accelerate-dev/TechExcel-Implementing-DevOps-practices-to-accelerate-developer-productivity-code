@@ -4,13 +4,12 @@
 name: MPP-Team-Messaging-App CI/CD
 
 env:
-  registryName: zidi4zoe54vbmmpnpreg.azurecr.io
   repositoryName: techboost/dotnetcoreapp
   dockerFolderPath: ./Application/src/RazorPagesTestSample
   tag: ${{github.run_number}}
-  webAppDevUriPrefix: zidi4zoe54vbm-dev
-  LOAD_TEST_RESOURCE: "AlesspanLoadTesting"   # set this to your Azure Load Test resource's name
-  LOAD_TEST_RESOURCE_GROUP: "mpp-team-messaging-rg" # set this to the resource group you've used for this training
+  webAppUriPrefix: ${{vars.WEBAPP_URI_PREFIX}}
+  LOAD_TEST_RESOURCE: ${{ vars.AZURE_LOADTESTING_RESOURCENAME }}   # set this to your Azure Load Test resource's name
+  LOAD_TEST_RESOURCE_GROUP: ${{vars.AZURE_RG}} # set this to the resource group you've used for this training
 
 on:
   push:
@@ -65,7 +64,7 @@ jobs:
       uses: docker/login-action@v1.9.0
       with:
         # Server address of Docker registry. If not set then will default to Docker Hub
-        registry: ${{ secrets.ACR_LOGIN_SERVER }}
+        registry: ${{ vars.ACR_LOGIN_SERVER }}
         # Username used to log against the Docker registry
         username: ${{ secrets.ACR_USERNAME }}
         # Password or personal access token used to log against the Docker registry
@@ -74,10 +73,10 @@ jobs:
         logout: true
         
     - name: Docker Build
-      run: docker build -t $registryName/$repositoryName:$tag --build-arg build_version=$tag $dockerFolderPath
+      run: docker build -t ${{vars.ACR_LOGIN_SERVER}}/$repositoryName:$tag --build-arg build_version=$tag $dockerFolderPath
       
     - name: Docker Push
-      run: docker push $registryName/$repositoryName:$tag
+      run: docker push ${{vars.ACR_LOGIN_SERVER}}/$repositoryName:$tag
 
   deploy-to-dev:
   
@@ -85,7 +84,7 @@ jobs:
     needs: dockerBuildPush
     environment:
       name: dev
-      url: https://$webAppDevUriPrefix.azurewebsites.net/
+      url: https://$($webAppUriPrefix)-dev.azurewebsites.net/
     
     steps:
       - name: 'Login via Azure CLI'
@@ -95,8 +94,8 @@ jobs:
 
       - uses: azure/webapps-deploy@v2
         with:
-          app-name: ${{ env.webAppDevUriPrefix }}
-          images: ${{ env.registryName }}/${{ env.repositoryName}}:${{ env.tag }}
+          app-name: ${{ env.webAppUriPrefix }}-dev
+          images: ${{vars.ACR_LOGIN_SERVER}}/${{ env.repositoryName}}:${{ env.tag }}
 
   loadTest:
     name: Load Test
@@ -117,12 +116,12 @@ jobs:
         with:
           loadTestConfigFile: 'LoadTestConfig.yaml'
           loadTestResource: ${{ env.LOAD_TEST_RESOURCE }}
-          resourceGroup: ${{ env.LOAD_TEST_RESOURCE_GROUP }}
+          resourceGroup: ${{vars.AZURE_RG}}
           env: |
             [
               {
               "name": "webapp",
-              "value": "${{ env.webAppDevUriPrefix }}.azurewebsites.net"
+              "value": "${{ env.webAppUriPrefix }}-dev.azurewebsites.net"
               }
             ]  
 
